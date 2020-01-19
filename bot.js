@@ -5,8 +5,6 @@ const { promisify } = require('util');
 const readdir = promisify(require('fs').readdir);
 const Enmap = require('enmap');
 const EnmapLevel = require('enmap-level');
-const YouTube = require('simple-youtube-api');
-const ytdl = require('ytdl-core');
 //const pg = require('pg'); // Coming soon!
 
 const client = new Discord.Client();
@@ -34,7 +32,6 @@ if (!allowedStatuses.includes(client.config.status)) {
 }
 
 require('./modules/functions.js')(client);
-require('./modules/music.js')(client);
 
 client.commands = new Discord.Collection();
 client.aliases = new Discord.Collection();
