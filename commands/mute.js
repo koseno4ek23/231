@@ -1,56 +1,71 @@
-const Discord = require('discord.js');
-exports.run = async (client, message, args) => {
-  var guildSettings = client.settings.get(message.guild.id);
-  const {caseNumber} = require('../modules/caseNumber.js');
+const Discord = require("discord.js");
+const ms = require("ms");
+const botconfig = require("../config.json");
+ 
+module.exports.run = async (bot, message, args) => {
+      if(!message.content.startsWith(`?`)) return
+ 
+ 
+  if(!message.member.hasPermission("MANAGE_MESSAGES")) return message.reply("<a:1603_Animated_Cross:660100310005710888>`|У вас нет прав`");
 
-  const user = message.mentions.users.first();
-  const modlog = message.guild.channels.find(channel => channel.name === guildSettings.modLogChannel);
-  //if (!modlog) return message.reply('Could not find mod log channel');
-  const caseNum = await caseNumber(client, modlog);
-  const reason = args.splice(1, args.length).join(' ') || `Awaiting moderator's input. Use ${guildSettings.prefix}reason ${caseNum} <reason>.`;
-
-  var muteRole = client.guilds.get(message.guild.id).roles.find('name', 'Muted');
-  //if (!modlog) return message.reply('I cannot find a mod log channel');
-  if (!muteRole) {
-    message.guild.createRole({name: 'Muted', color: 'DARKER_GREY', permissions: 36766720}).then(() => message.reply('As there was no `Muted` role, one was created')).catch(()=> {return message.reply('Unable to create `Muted` role that was not already present')});
-    muteRole = client.guilds.get(message.guild.id).roles.find('name', 'Muted');
+  let tomute = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[0]));
+  if(!tomute) return message.reply("<a:1603_Animated_Cross:660100310005710888>`|Укажите пользователя`");
+  if(tomute.hasPermission("MANAGE_GUILD")) return message.reply("У меня нет прав");
+  let reason = args.slice(2).join(" ");
+  if(!reason) return message.reply("<a:1603_Animated_Cross:660100310005710888>`|Укажите причину`");
+ 
+  let muterole = message.guild.roles.find(`name`, "muted");
+  //start of create role
+  if(!muterole){
+    try{
+      muterole = await message.guild.createRole({
+        name: "muted",
+        color: "#000000",
+        permissions:[]
+      })
+      message.guild.channels.forEach(async (channel, id) => {
+        await channel.overwritePermissions(muterole, {
+          SEND_MESSAGES: false,
+          ADD_REACTIONS: false
+        });
+      });
+    }catch(e){
+      console.log(e.stack);
+    }
   }
-  if (message.mentions.users.size < 1) return message.reply('You must mention someone to mute them.');
-  const embed = new Discord.RichEmbed()
-			.setColor('RED')
-			.addField(`User`, `${user.tag} (${user.id})`, true)
-			.addField(`Moderator`, `${message.author.tag} (${message.author.id})`, true)
-			.addField(`Reason`, `${reason}`, true)
-      .setFooter(`Case ${caseNum}`);
-
-  if (!message.guild.member(client.user).hasPermission('MANAGE_ROLES_OR_PERMISSIONS')) return message.reply('I do not have the correct permissions.').catch(console.error);
-
-  if (message.guild.member(user).roles.has(muteRole.id)) {
-    message.guild.member(user).removeRole(muteRole).then(() => {
-      message.channel.send(`User unmuted by ${message.author.tag} (${message.author.id}) with reason \`${reason}\``);
-      var unmuteEmbed = embed.setTitle('User Unmuted');
-      if (modlog) modlog.send({embed: unmuteEmbed}).catch(console.error);
-    });
-  } else {
-    message.guild.member(user).addRole(muteRole).then(() => {
-      message.channel.send(`User muted by ${message.author.tag} (${message.author.id}) with reason \`${reason}\``);
-      var muteEmbed = embed.setTitle('User Muted');
-      if (modlog) modlog.send({embed: muteEmbed}).catch(console.error);
-    });
-  }
-
-};
-
-exports.conf = {
-  enabled: true,
-  guildOnly: true,
-  aliases: ['unmute'],
-  permLevel: 2
-};
-
-exports.help = {
-  name: 'mute',
-  category: 'Moderation',
-  description: 'Mutes or unmutes a mentioned user',
-  usage: 'Mute: mute [user mention] [reason]\nUnmute: unmute [user mention] [reason]'
-};
+  //end of create role
+  let mutetime = args[1];
+  if(!mutetime) return message.reply("<a:1603_Animated_Cross:660100310005710888>`|Укажите время`");
+ 
+  message.delete().catch(O_o=>{});
+ 
+  try{
+    await tomute.send(`Вы были отключены на ${mutetime}.`)
+ }catch(e){
+   message.channel.send(`Пользователь отключен ... но его DM заблокированы. Они будут отключены для ${mutetime}`)
+ }
+ 
+ let muteembed = new Discord.RichEmbed()
+ .setDescription(`Администратор ${message.author}`)
+ .setColor("#00edff")
+ .addField("Участник", tomute)
+ .addField("Замьючен", message.channel)
+ .addField("Причина", mutetime)
+ .addField("Время", reason);
+  message.channel.send(muteembed)
+ 
+ 
+ await(tomute.addRole(muterole.id));
+ 
+ setTimeout(function(){
+   tomute.removeRole(muterole.id);
+   message.channel.send(`<@${tomute.id}> Был размучен`);
+ }, ms(mutetime));
+ 
+ 
+//end of module
+}
+ 
+module.exports.help = {
+ name: "mute"
+}

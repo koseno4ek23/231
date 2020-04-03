@@ -1,47 +1,29 @@
-exports.run = async (client, message, args, level) => { // eslint-disable-line no-unused-vars
-	const guildSettings = client.settings.get(message.guild.id);
-	const Discord = require('discord.js');
-	const { caseNumber } = require('../modules/caseNumber.js');
-	let member = message.mentions.members.first();
-	if (!member) return message.reply('Please mention a valid member of this server');
-	if (!member.bannable) return message.reply('I cannot ban this user! Do they have a higher role? Do I have ban permissions?');
+const Discord = require('discord.js');
 
-	const modlog = message.guild.channels.find(channel => channel.name === guildSettings.modLogChannel);
-	const caseNum = await caseNumber(client, modlog);
-	const reason = args.splice(1, args.length).join(' ') || `Awaiting moderator's input. Use ${guildSettings.prefix}reason ${caseNum} <reason>.`;
+module.exports.run = async (bot, message, args) => {
+    if(!message.content.startsWith(`?`)) return
+    if (!message.member.hasPermission("BAN_MEMBERS")) return message.channel.send("<a:1603_Animated_Cross:660100310005710888>`|У вас недостаточно прав для выполнения этой команды`")
+    else if (!message.guild.me.hasPermission("BAN_MEMBERS")) return message.channel.send("<a:1603_Animated_Cross:660100310005710888>`|У меня нету прав!`")
 
-	message.guild.ban(member, `${message.author.username} banned this user with reason: ${reason}`).then(() => {
-		message.reply(`${member.user.tag} (${member.user.id}) has been banned by ${message.author.tag} because: ${reason}`);
-		//if (!modlog) return console.log('modLogChannel does not exist on this server');
-		const embed = new Discord.RichEmbed()
-			.setColor('RED')
-			.setTitle('User Banned')
-			.addField(`User`, `${member.user.tag} (${member.user.id})`, true)
-			.addField(`Moderator`, `${message.author.tag} (${message.author.id})`, true)
-			.addField(`Reason`, `${reason}`, true)
-			.setFooter(`Case ${caseNum}`);
-		if (modlog) modlog.send({ embed })
-			.then(() => {
-				client.log('log', `${message.guild.name}/#${message.channel.name} (${message.channel.id}): ${member.user.tag} (${member.user.id}) was banned by ${message.author.tag} (${message.author.id})`, 'CMD');
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-	})
-		.catch(error => message.reply(`Sorry ${message.author} I couldn't ban because of : ${error}`));
+    let member = message.guild.member(message.mentions.users.first() || message.guild.members.find(m => m.user.username == args[0] || m.id == args[0]))
+    if (!member) return message.channel.send(`Необходимо упомянуть пользователя`)
+    else if (member.hasPermission("BAN_MEMBERS")) return message.channel.send("<a:1603_Animated_Cross:660100310005710888>`|Я не могу забанить этого пользователя, у вас с ним баланс разрешений.`")
 
-};
+    let reason = args.slice(1).join(' ') || 'Причина не указана - By Shizuma'
 
-exports.conf = {
-	enabled: true,
-	guildOnly: true,
-	aliases: [],
-	permLevel: 2
-};
+    await member.ban(reason)
+    const embed = new Discord.RichEmbed()
+    .setColor(0xFFFF00)
+    .setTimestamp()
+    .addField('Действие:', 'Бан')
+    .addField('Участник:', `<@${member.id}>`)
+    .addField('Администратор:', `<@${message.author.id}>`)
+    .addField('Причина', `${reason}`)
+      message.channel.send(embed)
+  
 
-exports.help = {
-	name: 'ban',
-	category: 'Moderation',
-	description: 'Ban hammer time',
-	usage: 'ban [user mention] [reason]'
-};
+}
+
+module.exports.help = {
+    name: 'ban'
+}

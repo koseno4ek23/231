@@ -1,33 +1,21 @@
-const Discord = require('discord.js');
-
-exports.run = async (client, message, args, level) => { // eslint-disable-line no-unused-vars
-	var question = args.join(' ');
-	var answers = await client.config.eightBallResponses;
-
-	if (!question.endsWith('?')) return message.reply('That doesn\'t look like a question. (Remember: Questions end in question marks)');
-	var a = Math.floor(Math.random() * answers.length);
-
-	let ballembed = new Discord.RichEmbed()
-	.setAuthor(client.user.username, client.user.displayAvatarURL)
-	.setColor("#7289DA")
-	.addField("Question", question)
-	.addField("Answer", answers[a])
-	.setFooter(message.author.tag);
+const Discord = module.require("discord.js");
+module.exports.run = async (bot, message, args) => {
   
-	message.channel.send(ballembed);
+      if(!message.content.startsWith(`?`)) return
+
+    let ot = ["Это точно", "Это несомненно так", " Без сомнения", "Да — наверняка", "Вы можете положиться на это", "Как я вижу, да", "Скорее всего", "Хорошие перспективы", "Признаки указывают на да", "Да", "Лекго, попробуйте снова", "Спроси позже", "Лучше не скажу вам сейчас", "Я не могу предсказать", "Сосредоточиться и снова задать", "Не рассчитывай на это", "Мой ответ-нет", "Мои источники говорят нет", "Перспективы не очень хорошие", "Очень сомнительно"]
+    var rand = Math.floor(Math.random() * ot.length);
+    let answer = args.join(" ")
+    if (!answer) return;
+    let embed = new Discord.RichEmbed()
+        .setDescription(`${message.author.tag}`)
+        .addField(`:question: Вопрос`, answer)
+        .addField(`:8ball: 8ball`, ot[rand]);
+
+    message.channel.send(embed)
+
 
 };
-
-exports.conf = {
-	enabled: true,
-	guildOnly: false,
-	aliases: [],
-	permLevel: 0
-};
-
-exports.help = {
-	name: '8ball',
-	category: 'Fun',
-	description: 'Ask a yes/no question, get an answer',
-	usage: '8ball [question]'
+module.exports.help = {
+    name: "8ball"
 };
